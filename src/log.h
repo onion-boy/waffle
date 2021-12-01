@@ -14,10 +14,13 @@ typedef struct console
 } Console;
 
 void exists_or_exit(void *ptr);
-void push_to_string(char **prefix, char *str, int do_free);
+void push_to_string(char **dest, char *add, int do_free);
+void realloc_push_to_string(char **dest, char *add);
+void auto_push_to_string(char **dest, char *add);
 void copy_string(char **dest, char *src);
 
 int console_print(Console *console, char *str, ...);
+int console_printdf(Console *console, char *str, va_list args);
 int console_println(Console *console, char *str, ...);
 void set_console_defaults(Console *console);
 

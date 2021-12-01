@@ -3,7 +3,7 @@
 void exists_or_exit(void *ptr)
 {
     if (ptr == NULL)
-        exit(139);
+        exit(1);
 }
 
 void copy_string(char **dest, char *src)
@@ -13,22 +13,35 @@ void copy_string(char **dest, char *src)
     strcpy(*dest, src);
 }
 
-void push_to_string(char **dest, char *src, int do_free)
+void push_to_string(char **dest, char *add, int do_free)
 {
     char *copy;
-    int plen = 0, slen = strlen(src);
+    int plen = 0, slen = strlen(add);
 
     copy_string(&copy, *dest);
 
     if (*dest != NULL)
         plen = strlen(*dest);
-    
-    if (do_free) free(*dest);
-    *dest = calloc(slen + plen + 1, sizeof(char));
 
+    if (do_free)
+        free(*dest);
+
+    *dest = calloc(slen + plen + 1, sizeof(char));
     strncat(*dest, copy, plen);
-    strncat(*dest, src, slen);
+    strncat(*dest, add, slen);
     free(copy);
+}
+
+void realloc_push_to_string(char **dest, char *add)
+{
+    int plen = strlen(*dest), slen = strlen(add);
+    *dest = realloc(*dest, (slen + plen + 1) * sizeof(char));
+    strncat(*dest, add, slen);
+}
+
+void auto_push_to_string(char **dest, char *add)
+{
+    strncat(*dest, add, strlen(add));
 }
 
 void set_console_defaults(Console *console)
@@ -36,16 +49,14 @@ void set_console_defaults(Console *console)
     console->stream = stdout;
 }
 
-int console_print(Console *console, char *str, ...)
+int console_printdf(Console *console, char *str, va_list args)
 {
-    char *print;
+    char *print = calloc(strlen(str) + strlen(console->prefix) + 1, sizeof(char));
     int rc;
-    va_list args;
 
     set_console_defaults(console);
-    copy_string(&print, console->prefix);
-    push_to_string(&print, str, 1);
-    va_start(args, str);
+    auto_push_to_string(&print, console->prefix);
+    auto_push_to_string(&print, str);
     rc = vfprintf(console->stream, print, args);
 
     va_end(args);
@@ -53,36 +64,34 @@ int console_print(Console *console, char *str, ...)
     return rc;
 }
 
+int console_print(Console *console, char *str, ...)
+{
+    va_list args;
+    va_start(args, str);
+    return console_printdf(console, str, args);
+}
+
 int console_println(Console *console, char *str, ...)
 {
-    int rc;
     va_list args;
-
-    push_to_string(&str, "\n", 0);
     va_start(args, str);
-    rc = console_print(console, str, args);
-
-    va_end(args);
+    push_to_string(&str, "\n", 0);
+    int rc = console_printdf(console, str, args);
     free(str);
     return rc;
 }
 
 void console_stream(Console *console, FILE *stream)
 {
-    exists_or_exit(console);
-    exists_or_exit(stream);
     console->stream = stream;
 }
 
 void console_prefix(Console *console, char *prefix)
 {
-    exists_or_exit(&console);
-    exists_or_exit(prefix);
     copy_string(&console->prefix, prefix);
 }
 
 void console_level(Console *console, int level)
 {
-    exists_or_exit(&console);
     console->level = level;
 }

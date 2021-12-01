@@ -10,24 +10,35 @@ EXEC 		:= waffle
 OBJECT_DIR 	:= obj
 SOURCE_DIR 	:= src
 BINARY_DIR	:= bin
-LIB 		:= engine ../$(SOURCE_DIR)
+LIB 		:= engine
 
-REPLACE		:= $(wordlist 2,$(words $(LIB)),x $(LIB))
-MODULES		:= $(BUILD_DIR)/$(subst ../,,$(lastword $(LIB))).o $(REPLACE:%=$(BUILD_DIR)/%.o)
+LIB_SRC		:= ../$(SOURCE_DIR)
+COMBINED	:= $(LIB) $(LIB_SRC)
+MODULES		:= $(BUILD_DIR)/$(SOURCE_DIR).o $(LIB:%=$(BUILD_DIR)/%.o)
 OUTPUT		:= $(BINARY_DIR)/$(EXEC)
+ALL_SOURCES := $(shell find . -name "*.c")
 
-.PHONY: clean all
+done 		:= (echo " > done :)" && echo)
 
-all: $(OUTPUT)
-	@echo "done!"
+.PHONY: clean done $(COMBINED)
 
-$(LIB): 
-	$(MAKE) -C $(SOURCE_DIR)/$@
+done: $(OUTPUT)
+	
 
-$(OUTPUT): $(LIB)
+$(OUTPUT): $(ALL_SOURCES)
 	@mkdir -p $(@D)
-	@echo "building executable..."
-	$(CC) $(MODULES) -o $@
+	@echo " > building executable"
+	@$(CC) $(MODULES) -o $@
+	@$(call done)
+
+$(ALL_SOURCES): $(COMBINED)
+
+$(COMBINED): 
+	@echo
+	@$(MAKE) -C $(SOURCE_DIR)/$@
 
 clean:
-	rm -rf $(OBJECT_DIR) $(BINARY_DIR)
+	@echo
+	@echo " > deleting object and binary directories"
+	@rm -rf $(OBJECT_DIR) $(BINARY_DIR)
+	@$(call done)
